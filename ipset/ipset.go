@@ -25,16 +25,16 @@ import (
 	"strconv"
 	"strings"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/coreos/go-semver/semver"
 )
 
 const minIpsetVersion = "6.0.0"
 
 var (
-	ipsetPath            string
-	errIpsetNotFound     = errors.New("Ipset utility not found")
-	errIpsetNotSupported = errors.New("Ipset utility version is not supported, requiring version >= 6.0")
+	ipsetPath                  string
+	errIpsetNotFound           = errors.New("ipset not found")
+	errIpsetNotSupported       = errors.New("ipset version is not supported, requiring version >= 6.0")
+	errIpsetUnableToGetVersion = errors.New("unable to get ipset version")
 )
 
 // Params defines optional parameters for creating a new set.
@@ -64,8 +64,7 @@ func initCheck() error {
 		ipsetPath = path
 		supportedVersion, err := getIpsetSupportedVersion()
 		if err != nil {
-			log.Warnf("Error checking ipset version, assuming version at least 6.0.0: %v", err)
-			supportedVersion = true
+			return errIpsetUnableToGetVersion
 		}
 		if supportedVersion {
 			return nil
@@ -76,9 +75,6 @@ func initCheck() error {
 }
 
 func (s *IPSet) createHashSet(name string) error {
-	/*	out, err := exec.Command("/usr/bin/sudo",
-		ipsetPath, "create", name, s.HashType, "family", s.HashFamily, "hashsize", strconv.Itoa(s.HashSize),
-		"maxelem", strconv.Itoa(s.MaxElem), "timeout", strconv.Itoa(s.Timeout), "-exist").CombinedOutput()*/
 	out, err := exec.Command(ipsetPath, "create", name, s.HashType, "family", s.HashFamily, "hashsize", strconv.Itoa(s.HashSize),
 		"maxelem", strconv.Itoa(s.MaxElem), "timeout", strconv.Itoa(s.Timeout), "-exist").CombinedOutput()
 	if err != nil {
@@ -133,12 +129,19 @@ func (s *IPSet) Refresh(entries []string) error {
 	if err != nil {
 		return err
 	}
+
+	errs := []error{}
+
 	for _, entry := range entries {
 		out, err := exec.Command(ipsetPath, "add", tempName, entry, "-exist").CombinedOutput()
 		if err != nil {
-			log.Errorf("error adding entry %s to set %s: %v (%s)", entry, tempName, err, out)
+			errs = append(errs, fmt.Errorf("error adding entry %s to set %s: %v (%s)", entry, tempName, err, out))
 		}
 	}
+	if len(errs) > 0 {
+		return strings.Join(" ", errs)
+	}
+
 	err = Swap(tempName, s.Name)
 	if err != nil {
 		return err
