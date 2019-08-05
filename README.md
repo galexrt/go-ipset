@@ -12,16 +12,19 @@ go-ipset requires ipset kernel module and userspace utility version 6.0 or great
 
 Install go-ipset using the "go get" command:
 
-    go get github.com/janeczku/go-ipset/ipset
+```
+go get github.com/janeczku/go-ipset/ipset
+```
 
 Install dependencies:
 
-    go get github.com/Sirupsen/logrus
-    go get github.com/coreos/go-semver/semver
+```
+go get github.com/coreos/go-semver/semver
+```
 
 ## API Reference ##
 
-[![GoDoc](https://godoc.org/github.com/google/go-github/github?status.svg)](https://godoc.org/github.com/janeczku/go-ipset/ipset)
+[![GoDoc](https://godoc.org/github.com/janeczku/go-ipset/github?status.svg)](https://godoc.org/github.com/janeczku/go-ipset/ipset)
 
 ## Usage ##
 
@@ -47,7 +50,7 @@ trustedNetworks := ipset.New("trusted-networks", "hash:net", &ipset.Params{})
 #### Add a single entry to the set
 
 ```go
-customers.Add("8.8.2.2")
+customers.Add("8.8.2.2", 0)
 ```
 
 #### Populate the set with IPv4 addresses (overwriting the previous content)
@@ -84,6 +87,7 @@ abusers := ipset.New("ratelimited", "hash:ip", &ipset.Params{Timeout: 60})
 ```
 
 #### List entries of a set
+
 ```go
 // list is []string
 list ipset.List("customers")
